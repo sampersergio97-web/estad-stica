@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Estadística Master Pro — Aventura de Datos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg-1:#0f172a; --bg-2:#172554; --bg-3:#1e293b; --panel:#14213d;
+      --card:#162447; --gold:#fbbf24; --pink:#f472b6; --blue:#60a5fa;
+      --green:#4ade80; --purple:#c084fc; --teal:#2dd4bf; --red:#f87171;
+      --orange:#fb923c; --white:#eef6ff; --muted:#bfd2f0; --shadow:0 18px 45px rgba(0,0,0,.35);
+    }
+    *::-webkit-scrollbar{width:10px}
+    *::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:999px}
+    body{
+      font-family:'Nunito',sans-serif; background:linear-gradient(180deg,var(--bg-1) 0%, var(--bg-2) 58%, var(--bg-3) 100%);
+      color:var(--white); min-height:100vh; overflow-x:hidden;
+    }
+    .screen{display:none;position:relative;z-index:1}
+    .screen.active{display:flex}
+    .btn{
+      border:none; border-radius:999px; padding:12px 24px; font-weight:900; font-size:15px; cursor:pointer;
+      transition:.25s ease; font-family:'Nunito',sans-serif; letter-spacing:.2px;
+    }
+    .btn-primary{background:linear-gradient(135deg,var(--teal),var(--blue));color:#fff;box-shadow:0 10px 22px rgba(96,165,250,.25)}
+    .btn-secondary{background:rgba(255,255,255,.08);color:var(--white);border:1px solid rgba(255,255,255,.08)}
+    .btn-danger{background:rgba(248,113,113,.15);color:#fecaca;border:1px solid rgba(248,113,113,.25)}
+    .chip-toggle{padding:10px 16px; border-radius:999px; border:2px solid transparent; background:rgba(255,255,255,.05); color:var(--white); cursor:pointer; font-weight:900; transition:.2s ease;}
+    .chip-toggle.active{border-color:var(--gold);background:rgba(251,191,36,.13);color:#fff}
+    #intro{min-height:100vh; align-items:center; justify-content:center; flex-direction:column; text-align:center; padding:30px 20px; gap:16px;}
+    .hero-icon{font-size:92px; filter:drop-shadow(0 12px 28px rgba(0,0,0,.35)); animation:float 3s ease-in-out infinite}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+    .logo{font-family:'Fredoka One',cursive; font-size:58px; line-height:1; background:linear-gradient(135deg,var(--gold),var(--pink),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .config-panel{width:min(980px,100%); display:grid; grid-template-columns:1.1fr .9fr; gap:18px; margin-top:10px;}
+    .glass{background:rgba(20,33,61,.94); border:1px solid rgba(255,255,255,.08); border-radius:24px; padding:22px; box-shadow:var(--shadow); text-align:left;}
+    .input{width:100%; padding:13px 16px; border-radius:16px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.05); color:var(--white); font-size:15px; outline:none;}
+    .world-cards{display:flex; gap:18px; justify-content:center; flex-wrap:wrap; margin-top:14px; max-width:1120px}
+    .world-card{width:300px; background:rgba(20,33,61,.95); border:2px solid transparent; border-radius:28px; padding:24px 22px; position:relative; overflow:hidden; cursor:pointer; transition:.28s ease; box-shadow:var(--shadow); text-align:left}
+    .world-card.selected{border-color:var(--gold); transform:translateY(-3px); box-shadow:0 0 0 3px rgba(251,191,36,.14), var(--shadow)}
+    #game{min-height:100vh; flex-direction:column; padding:18px; width:min(1220px,100%); margin:0 auto}
+    .game-layout{display:grid; grid-template-columns:1.12fr .88fr; gap:18px; align-items:start}
+    .panel{background:rgba(20,33,61,.96); border:1px solid rgba(255,255,255,.08); border-radius:24px; padding:20px; box-shadow:var(--shadow)}
+    .problem-box{margin-top:14px; background:rgba(255,255,255,.05); border-radius:18px; padding:18px; min-height:130px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:30px; font-weight:900; color:#f8fbff}
+    .visual-zone{margin-top:16px; border-radius:18px; padding:16px; background:rgba(255,255,255,.04); min-height:175px; display:flex; align-items:center; justify-content:center; overflow:hidden}
+    .options{display:grid; gap:12px; margin-top:10px}
+    .option{background:rgba(255,255,255,.05); border:2px solid transparent; border-radius:18px; padding:16px; cursor:pointer; transition:.2s ease;}
+    .option.selected{border-color:var(--gold); background:rgba(251,191,36,.12)}
+    .option.correct{border-color:var(--green); background:rgba(74,222,128,.15)}
+    .option.wrong{border-color:var(--red); background:rgba(248,113,113,.14)}
+    .feedback{position:fixed; inset:0; background:rgba(7,10,22,.58); display:none; align-items:center; justify-content:center; padding:20px; z-index:99}
+    .feedback.show{display:flex}
+    .math-bubble{position:fixed; font-weight:900; color:rgba(255,255,255,.12); animation:mathFloat 16s linear infinite; pointer-events:none; z-index:0;}
+    @keyframes mathFloat{from{transform:translateY(110vh) rotate(0deg);opacity:0}to{transform:translateY(-15vh) rotate(360deg);opacity:0}}
+  </style>
+</head>
+<body>
+  <section id="intro" class="screen active">
+    <div class="hero-icon">📊📈🎲</div>
+    <div class="logo">Estadística Master</div>
+    <p style="max-width:800px; color:var(--muted)">Desafío de Datos para 3° de Primaria. Elige tu configuración y prepárate para el reto.</p>
+
+    <div class="config-panel">
+      <div class="glass">
+        <h3>Configuración</h3>
+        <div style="margin-top:10px;">
+          <label>Nombre del Jugador:</label>
+          <input id="playerName" class="input" type="text" maxlength="20" placeholder="Escribe tu nombre">
+        </div>
+        <div style="margin-top:15px;">
+          <label>¿Cuántas preguntas quieres responder?</label>
+          <div style="display:flex; gap:10px; margin-top:8px;">
+            <button class="chip-toggle active" data-q="5" onclick="setQCount(5)">5 Niveles</button>
+            <button class="chip-toggle" data-q="10" onclick="setQCount(10)">10 Niveles</button>
+            <button class="chip-toggle" data-q="20" onclick="setQCount(20)">Maratón (20)</button>
+          </div>
+        </div>
+        <div style="margin-top:15px;">
+          <label>Dificultad:</label>
+          <div style="display:flex; gap:10px; margin-top:8px;">
+            <button class="chip-toggle active" data-diff="easy" onclick="setDiff('easy')">Fácil</button>
+            <button class="chip-toggle" data-diff="medium" onclick="setDiff('medium')">Media</button>
+          </div>
+        </div>
+      </div>
+      <div class="glass">
+        <h3>Ranking y Opciones</h3>
+        <p>Gana puntos según la dificultad seleccionada. Cada acierto suma, pero cuidado con las vidas.</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px;">
+          <button class="btn btn-secondary" onclick="showRanking()">🏆 Ver Ranking</button>
+          <button class="btn btn-secondary" onclick="toggleSound()" id="soundBtn">🔊 Sonido ON</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="world-cards">
+      <div class="world-card" style="border-left:5px solid var(--gold)" onclick="selectWorld(1)" id="w1">
+        <h3 style="color:var(--gold)">Mundo 1: Gráficos</h3>
+        <p style="font-size:14px; color:var(--muted)">Barras y pictogramas de datos reales.</p>
+      </div>
+      <div class="world-card" style="border-left:5px solid var(--teal)" onclick="selectWorld(2)" id="w2">
+        <h3 style="color:var(--teal)">Mundo 2: Tablas</h3>
+        <p style="font-size:14px; color:var(--muted)">Frecuencias, conteo y hallar la moda.</p>
+      </div>
+      <div class="world-card" style="border-left:5px solid var(--orange)" onclick="selectWorld(3)" id="w3">
+        <h3 style="color:var(--orange)">Mundo 3: Azar</h3>
+        <p style="font-size:14px; color:var(--muted)">Seguro, posible e imposible.</p>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="margin-top:20px; font-size:18px;" onclick="openLesson()">🚀 Ir al Mundo Seleccionado</button>
+  </section>
+
+  <section id="lesson" class="screen" style="flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center;">
+    <div class="hero-icon" id="lessonIcon">📊</div>
+    <h1 class="logo" id="lessonTitle">Lección</h1>
+    <div class="glass" style="max-width:800px; margin-top:20px;">
+        <p id="lessonText" style="line-height:1.8; font-size:18px;"></p>
+        <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:15px; margin-top:15px; border-left:4px solid var(--gold)" id="lessonHighlight"></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:25px;" onclick="startGame()">¡Comenzar Misión!</button>
+  </section>
+
+  <section id="game" class="screen">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+        <div class="logo" style="font-size:24px;">Estadística Master</div>
+        <div style="display:flex; gap:10px;">
+            <div class="btn btn-secondary" style="cursor:default">⭐ <span id="spanScore">0</span></div>
+            <div class="btn btn-secondary" style="cursor:default">❤️ <span id="spanLives">❤️❤️❤️</span></div>
+            <div class="btn btn-secondary" style="cursor:default">🧩 <span id="spanStep">1/5</span></div>
+        </div>
+    </div>
+
+    <div class="game-layout">
+        <div class="panel">
+            <h3 id="missionTitle" style="color:var(--teal)">Reto Estadístico</h3>
+            <div class="problem-box" id="problemBox"></div>
+            <div class="visual-zone" id="visualZone"></div>
+            <div style="margin-top:15px; padding:12px; background:rgba(96,165,250,0.1); border-radius:10px; color:var(--blue)" id="hintBox"></div>
+        </div>
+        <div class="panel">
+            <h2 id="questionText" style="margin-bottom:15px;">¿Cuál es la respuesta?</h2>
+            <div class="options" id="optionsBox"></div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn btn-primary" style="flex:1" onclick="checkAnswer()">Confirmar</button>
+                <button class="btn btn-danger" onclick="showIntro()">Salir</button>
+            </div>
+        </div>
+    </div>
+  </section>
+
+  <div class="feedback" id="feedback">
+    <div class="glass" style="text-align:center; max-width:500px;">
+        <div id="fbIcon" style="font-size:60px;">🎉</div>
+        <h2 id="fbTitle" style="margin:10px 0;">¡Correcto!</h2>
+        <p id="fbMsg" style="color:var(--muted); margin-bottom:20px;"></p>
+        <button class="btn btn-primary" id="fbNext" onclick="nextLevel()">Siguiente</button>
+    </div>
+  </div>
+
+  <section id="rankingScreen" class="screen" style="flex-direction:column; align-items:center; justify-content:center;">
+    <div class="glass" style="width:90%; max-width:800px;">
+        <h2 class="logo" style="font-size:32px; margin-bottom:20px;">🏆 Ranking de Maestros</h2>
+        <table style="width:100%; text-align:left; border-collapse:collapse;">
+            <tr style="color:var(--gold); border-bottom:1px solid rgba(255,255,255,0.1)">
+                <th style="padding:10px">Jugador</th><th style="padding:10px">Puntos</th><th style="padding:10px">Mundo</th>
+            </tr>
+            <tbody id="rankingBody"></tbody>
+        </table>
+        <button class="btn btn-primary" style="margin-top:20px;" onclick="showIntro()">Volver</button>
+    </div>
+  </section>
+
+  <script>
+    // BANCO EXTENSO DE 50 PREGUNTAS (Aproximadamente 17 por mundo)
+    const WORLDS = {
+      1: {
+        name: "Gráficos", icon: "📊",
+        lesson: "Los gráficos de barras comparan cantidades. La barra más alta es la que más se repite (la moda) y la más baja la que menos.",
+        tip: "Mira siempre los números en el eje vertical antes de responder.",
+        bank: [
+            {q:"¿Qué fruta es la más vendida?", data:[10,5,8], labels:["Pera","Uva","Manzana"], correct:0, type:'bar'},
+            {q:"¿Cuántas manzanas hay?", data:[4,12,6], labels:["Pera","Manzana","Uva"], correct:1, type:'bar'},
+            {q:"¿Qué color tuvo 15 votos?", data:[15,20,3], labels:["Rojo","Verde","Azul"], correct:0, type:'bar'},
+            {q:"Si cada 🍎 vale 2, ¿cuánto son 🍎🍎🍎?", data:[6], labels:["Manzanas"], correct:0, type:'picto', ans:["6","3","2"]},
+            {q:"¿Cuál es la diferencia entre Pera (10) y Uva (4)?", data:[10,4], labels:["Pera","Uva"], correct:0, type:'bar', ans:["6","10","4"]},
+            {q:"¿Qué equipo ganó?", data:[8,15,12], labels:["A","B","C"], correct:1, type:'bar'},
+            {q:"Si 🎾 vale 5, ¿cuántos puntos son 🎾🎾?", data:[10], labels:["Puntos"], correct:0, type:'picto', ans:["10","5","15"]},
+            {q:"¿Cuántos niños prefieren perro?", data:[20,8], labels:["Perro","Gato"], correct:0, type:'bar'},
+            {q:"¿Qué día llovió más?", data:[2,5,1], labels:["Lun","Mar","Mie"], correct:1, type:'bar'},
+            {q:"Si 🍦 vale 3, ¿cuánto son 🍦🍦?", data:[6], labels:["Helados"], correct:1, type:'picto', ans:["3","6","9"]},
+            {q:"¿Cuántas personas votaron en total? (A:4, B:6)", data:[4,6], labels:["A","B"], correct:2, type:'bar', ans:["4","6","10"]},
+            {q:"¿Cuál es la barra más pequeña?", data:[10,8,12], labels:["X","Y","Z"], correct:1, type:'bar'},
+            {q:"¿Qué barra llega al 18?", data:[18,5,9], labels:["Fútbol","Tenis","Golf"], correct:0, type:'bar'},
+            {q:"¿Cuántas pelotas de tenis hay?", data:[5,12], labels:["Fútbol","Tenis"], correct:1, type:'bar'},
+            {q:"Si cada 🎈 vale 10, ¿cuánto son 🎈🎈?", data:[20], labels:["Globos"], correct:2, type:'picto', ans:["10","15","20"]},
+            {q:"¿Qué color es menos popular?", data:[20,15,5], labels:["Blanco","Gris","Negro"], correct:2, type:'bar'}
+        ]
+      },
+      2: {
+        name: "Tablas", icon: "📋",
+        lesson: "Las tablas organizan datos. La moda es el dato que tiene la frecuencia más alta, es decir, el que más aparece.",
+        tip: "Cuenta las marcas (||||) con cuidado. Un grupo tachado suele valer 5.",
+        bank: [
+            {q:"¿Cuál es la moda de: A, A, B, C?", data:"A, A, B, C", correct:0, type:'table', ans:["A","B","C"]},
+            {q:"¿Cuántas veces aparece el número 5?", data:"5, 2, 5, 5, 1", correct:1, type:'table', ans:["2","3","4"]},
+            {q:"¿Cuál es la frecuencia de 'Rojo'?", data:"Rojo, Azul, Rojo, Rojo", correct:0, type:'table', ans:["3","1","4"]},
+            {q:"¿Qué número representa |||| ?", data:"4 marcas", correct:1, type:'table', ans:["5","4","3"]},
+            {q:"En: Perro, Gato, Perro, Perro. ¿Cuál es la moda?", data:"P, G, P, P", correct:0, type:'table', ans:["Perro","Gato","No hay"]},
+            {q:"¿Cuántos datos hay en total?", data:"X, Y, Z, W", correct:2, type:'table', ans:["1","2","4"]},
+            {q:"¿Quién tiene menor frecuencia?", data:"Sol, Sol, Sol, Luna", correct:1, type:'table', ans:["Sol","Luna","Empate"]},
+            {q:"En |||| | ¿Qué número es?", data:"6 marcas", correct:0, type:'table', ans:["6","5","1"]},
+            {q:"¿Es 'Fresa' la moda en: Fresa, Coco, Fresa?", data:"F, C, F", correct:0, type:'table', ans:["Sí","No","Empate"]},
+            {q:"¿Cuántas letras hay en 'MAMA'?", data:"MAMA", correct:2, type:'table', ans:["1","2","4"]},
+            {q:"¿Cuál frecuencia es mayor?", data:"Manzana: 10, Pera: 5", correct:0, type:'table', ans:["Manzana","Pera","Iguales"]},
+            {q:"¿Qué animal tiene frecuencia 2?", data:"León, Tigre, León, Oso", correct:0, type:'table', ans:["León","Tigre","Oso"]},
+            {q:"Si tengo 3 rojos y 3 azules, ¿hay moda?", data:"3R, 3A", correct:1, type:'table', ans:["Sí","No","Tal vez"]},
+            {q:"¿Cuántas marcas tiene el número 2?", data:"||", correct:1, type:'table', ans:["1","2","3"]},
+            {q:"Moda de: 1, 2, 1, 2, 2?", data:"1, 2, 1, 2, 2", correct:1, type:'table', ans:["1","2","No hay"]},
+            {q:"¿Qué fruta tiene 0 votos?", data:"Uva: 0, Manzana: 5", correct:0, type:'table', ans:["Uva","Manzana","Ninguna"]},
+            {q:"Total de: ||| y ||", data:"3 y 2", correct:2, type:'table', ans:["3","2","5"]}
+        ]
+      },
+      3: {
+        name: "Azar", icon: "🎲",
+        lesson: "Seguro: Siempre pasa. Posible: Puede que sí o no. Imposible: Nunca pasará.",
+        tip: "Si no hay ninguna opción de ese tipo en la bolsa, entonces es Imposible.",
+        bank: [
+            {q:"Bolsa con puras bolas AZULES. Sacar una ROJA es...", correct:1, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Si hoy es Lunes, que mañana sea Martes es...", correct:0, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Lanzar un dado y que salga el número 8 es...", correct:1, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"En una caja de 10 manzanas, sacar una manzana es...", correct:0, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Que un gato hable inglés es...", correct:1, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Tirar una moneda y que salga cara es...", correct:2, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Que mañana salga el sol es...", correct:0, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Meterse al mar y mojarse es...", correct:0, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Sacar un número del 1 al 6 en un dado es...", correct:0, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Que un elefante vuele con sus orejas es...", correct:1, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"En una bolsa de dulces de fresa y limón, sacar uno de fresa es...", correct:2, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Tirar un dado y sacar un número par es...", correct:2, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Que un perro ladre es un evento...", correct:0, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Sacar un as de una baraja normal es...", correct:2, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Pisar un charco y no mojarse los zapatos es...", correct:1, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Que los chanchos vuelen es...", correct:1, type:'prob', ans:["Seguro","Imposible","Posible"]},
+            {q:"Sacar un 2 en un dado es...", correct:2, type:'prob', ans:["Seguro","Imposible","Posible"]}
+        ]
+      }
+    };
+
+    let currentWorld = 1;
+    let questionsToPlay = 5;
+    let difficulty = 'easy';
+    let currentQuestions = [];
+    let currentStep = 0;
+    let score = 0;
+    let lives = 3;
+    let selectedIndex = null;
+    let soundEnabled = true;
+
+    function setQCount(n){
+        questionsToPlay = n;
+        document.querySelectorAll('[data-q]').forEach(b => b.classList.toggle('active', b.dataset.q == n));
+    }
+
+    function setDiff(d){
+        difficulty = d;
+        document.querySelectorAll('[data-diff]').forEach(b => b.classList.toggle('active', b.dataset.diff == d));
+    }
+
+    function selectWorld(w){
+        currentWorld = w;
+        document.querySelectorAll('.world-card').forEach((c, i) => c.classList.toggle('selected', i + 1 == w));
+    }
+
+    function showIntro(){
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('intro').classList.add('active');
+    }
+
+    function openLesson(){
+        const w = WORLDS[currentWorld];
+        document.getElementById('lessonIcon').innerText = w.icon;
+        document.getElementById('lessonTitle').innerText = `Mundo ${currentWorld}: ${w.name}`;
+        document.getElementById('lessonText').innerText = w.lesson;
+        document.getElementById('lessonHighlight').innerText = `💡 Tip Maestro: ${w.tip}`;
+        
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('lesson').classList.add('active');
+    }
+
+    function startGame(){
+        currentStep = 0; score = 0; lives = 3;
+        // Mezclar banco y elegir cantidad solicitada
+        let pool = [...WORLDS[currentWorld].bank];
+        pool.sort(() => Math.random() - 0.5);
+        currentQuestions = pool.slice(0, questionsToPlay);
+
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('game').classList.add('active');
+        loadLevel();
+    }
+
+    function loadLevel(){
+        selectedIndex = null;
+        const q = currentQuestions[currentStep];
+        document.getElementById('spanStep').innerText = `${currentStep + 1}/${questionsToPlay}`;
+        document.getElementById('spanScore').innerText = score;
+        document.getElementById('spanLives').innerText = "❤️".repeat(lives);
+        document.getElementById('questionText').innerText = q.q;
+        document.getElementById('problemBox').innerText = (q.type === 'table') ? q.data : "¡Mira el gráfico!";
+        document.getElementById('hintBox').innerText = "Analiza bien los datos antes de elegir.";
+
+        const viz = document.getElementById('visualZone');
+        viz.innerHTML = "";
+        
+        if(q.type === 'bar'){
+            let html = '<div style="display:flex; align-items:flex-end; gap:20px; height:120px;">';
+            q.data.forEach((v, i) => {
+                html += `<div style="text-align:center"><div style="background:var(--blue); width:30px; height:${v*6}px; border-radius:5px 5px 0 0"></div><span style="font-size:12px">${q.labels[i]}</span></div>`;
+            });
+            viz.innerHTML = html + '</div>';
+        } else if(q.type === 'picto'){
+            viz.innerHTML = `<div style="font-size:40px">${"🍎".repeat(q.data[0]/2 || 3)}</div>`;
+        } else if(q.type === 'prob'){
+            viz.innerHTML = "<div style='font-size:60px'>❓❓❓</div>";
+        }
+
+        const optsBox = document.getElementById('optionsBox');
+        optsBox.innerHTML = "";
+        const options = q.ans || q.labels;
+        options.forEach((opt, i) => {
+            const btn = document.createElement('div');
+            btn.className = 'option';
+            btn.innerText = opt;
+            btn.onclick = () => {
+                document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedIndex = i;
+            };
+            optsBox.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(){
+        if(selectedIndex === null) return;
+        const q = currentQuestions[currentStep];
+        const opts = document.querySelectorAll('.option');
+        
+        if(selectedIndex === q.correct){
+            score += (difficulty === 'easy' ? 100 : 200);
+            opts[selectedIndex].classList.add('correct');
+            showFeedback(true, "¡Excelente!", "Has interpretado los datos correctamente.");
+        } else {
+            lives--;
+            opts[selectedIndex].classList.add('wrong');
+            opts[q.correct].classList.add('correct');
+            showFeedback(false, "Casi...", "La respuesta correcta era " + (q.ans || q.labels)[q.correct]);
+        }
+    }
+
+    function showFeedback(win, title, msg){
+        document.getElementById('fbIcon').innerText = win ? "🎉" : "📕";
+        document.getElementById('fbTitle').innerText = title;
+        document.getElementById('fbMsg').innerText = msg;
+        document.getElementById('fbNext').innerText = (currentStep + 1 >= questionsToPlay || lives <= 0) ? "Finalizar" : "Siguiente";
+        document.getElementById('feedback').classList.add('show');
+    }
+
+    function nextLevel(){
+        document.getElementById('feedback').classList.remove('show');
+        if(lives <= 0){
+            saveScore();
+            showIntro();
+            return;
+        }
+        currentStep++;
+        if(currentStep < currentQuestions.length){
+            loadLevel();
+        } else {
+            saveScore();
+            alert("¡Misión cumplida! Puntos: " + score);
+            showIntro();
+        }
+    }
+
+    function saveScore(){
+        const name = document.getElementById('playerName').value || "Jugador";
+        const ranking = JSON.parse(localStorage.getItem('statRanking') || "[]");
+        ranking.push({name, score, world: WORLDS[currentWorld].name});
+        ranking.sort((a,b) => b.score - a.score);
+        localStorage.setItem('statRanking', JSON.stringify(ranking.slice(0, 5)));
+    }
+
+    function showRanking(){
+        const ranking = JSON.parse(localStorage.getItem('statRanking') || "[]");
+        const body = document.getElementById('rankingBody');
+        body.innerHTML = ranking.map(r => `<tr><td style="padding:10px">${r.name}</td><td style="padding:10px">${r.score}</td><td style="padding:10px">${r.world}</td></tr>`).join('');
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('rankingScreen').classList.add('active');
+    }
+
+    function toggleSound(){
+        soundEnabled = !soundEnabled;
+        document.getElementById('soundBtn').innerText = soundEnabled ? "🔊 Sonido ON" : "🔇 Sonido OFF";
+    }
+
+    // Decoración de fondo
+    function spawnMathBubbles(){
+      const symbols = ['📊','📋','🎲','📈','+','='];
+      setInterval(() => {
+        const bubble = document.createElement('div');
+        bubble.className = 'math-bubble';
+        bubble.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+        bubble.style.left = `${Math.random() * 95}vw`;
+        bubble.style.fontSize = `${15 + Math.random() * 20}px`;
+        bubble.style.animationDuration = `${10 + Math.random() * 10}s`;
+        document.body.appendChild(bubble);
+        setTimeout(() => bubble.remove(), 18000);
+      }, 2000);
+    }
+
+    selectWorld(1);
+    spawnMathBubbles();
+  </script>
+</body>
+</html>
